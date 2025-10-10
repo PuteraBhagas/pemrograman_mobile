@@ -87,7 +87,7 @@ class ProfilePage extends StatelessWidget {
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(60),
                   image: DecorationImage(
-                    image: AssetImage('assets/foto.jpg'),
+                    image: AssetImage('assets/profile.jpg'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -103,14 +103,14 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Putera Bhagas',
+                'Putera Bhagaswara',
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'NIM: 234160136',
+                'NIM: 2341760136',
                 style: GoogleFonts.poppins(fontSize: 16),
               ),
               Text(
