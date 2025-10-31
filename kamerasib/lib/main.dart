@@ -1,94 +1,169 @@
-import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
-// Fungsi main() asinkron untuk mengizinkan pengambilan kamera
-Future<void> main() async {
-  // Pastikan binding Flutter telah diinisialisasi
-  // Ini penting untuk memanggil platform code sebelum runApp()
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Dapatkan daftar kamera yang tersedia di perangkat
+void main() async {
+   WidgetsFlutterBinding.ensureInitialized();
   final cameras = await availableCameras();
-
-  // Dapatkan kamera pertama dari daftar (biasanya kamera belakang)
-  final firstCamera = cameras.first;
-
-  runApp(
-    MaterialApp(
-      theme: ThemeData.dark(),
-      home: CameraApp(
-        // Teruskan kamera yang dipilih ke widget CameraApp
-        camera: firstCamera,
-      ),
-    ),
-  );
+  runApp(CameraApp(cameras: cameras));
 }
 
-// Widget StatefulWidget untuk menampilkan preview kamera
-class CameraApp extends StatefulWidget {
-  final CameraDescription camera;
-
-  const CameraApp({
-    super.key,
-    required this.camera,
-  });
+class CameraApp extends StatelessWidget {
+  final List<CameraDescription> cameras;
+  const CameraApp({super.key, required this.cameras});
 
   @override
-  _CameraAppState createState() => _CameraAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Kamera Flutter',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
+      ),
+      home: CameraPreviewScreen(cameras: cameras),
+    );
+  }
 }
 
-class _CameraAppState extends State<CameraApp> {
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
+class CameraPreviewScreen extends StatefulWidget {
+  final List<CameraDescription> cameras;
+  const CameraPreviewScreen({super.key, required this.cameras});
+
+  @override
+  State<CameraPreviewScreen> createState() => _CameraPreviewScreenState();
+}
+
+class _CameraPreviewScreenState extends State<CameraPreviewScreen> {
+  CameraController? controller;
+  int selectedCameraIdx = 0;
+  String? imagePath;
 
   @override
   void initState() {
     super.initState();
-    
-    // Buat CameraController
-    _controller = CameraController(
-      // Dapatkan kamera spesifik dari widget.camera
-      widget.camera,
-      // Tentukan resolusi (medium sudah cukup untuk preview)
+    _initCamera(widget.cameras[selectedCameraIdx]);
+  }
+
+  Future<void> _initCamera(CameraDescription cameraDescription) async {
+    final newController = CameraController(
+      cameraDescription,
       ResolutionPreset.medium,
     );
 
-    // Inisialisasi controller dan simpan Future-nya untuk digunakan
-    // oleh FutureBuilder
-    _initializeControllerFuture = _controller.initialize();
+    await newController.initialize();
+    if (!mounted) return;
+
+    setState(() {
+      controller = newController;
+    });
+  }
+
+  Future<void> _switchCamera() async {
+    if (widget.cameras.length < 2) return;
+    setState(() {
+      selectedCameraIdx = (selectedCameraIdx + 1) % widget.cameras.length;
+    });
+    await _initCamera(widget.cameras[selectedCameraIdx]);
+  }
+
+  Future<void> _takePicture() async {
+    if (controller == null || !controller!.value.isInitialized) return;
+
+    final Directory appDir = await getApplicationDocumentsDirectory();
+    final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final String filePath = path.join(appDir.path, fileName);
+
+    try {
+      final rawFile = await controller!.takePicture();
+      await rawFile.saveTo(filePath);
+      setState(() {
+        imagePath = filePath;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Foto disimpan di: $filePath')),
+      );
+    } catch (e) {
+      debugPrint('Error saat mengambil foto: $e');
+    }
   }
 
   @override
   void dispose() {
-    // Pastikan untuk dispose controller saat widget di-dispose
-    // untuk melepaskan resource kamera.
-    _controller.dispose();
+    controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Contoh Preview Kamera')),
-      // Gunakan FutureBuilder untuk menampilkan loading indicator
-      // saat controller sedang diinisialisasi.
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // Jika Future selesai (controller sudah terinisialisasi),
-            // tampilkan preview kamera.
-            // Gunakan AspectRatio agar preview tidak terdistorsi
-            // sesuai rasio aspek kamera.
-            return AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: CameraPreview(_controller));
-          } else {
-            // Jika masih loading, tampilkan CircularProgressIndicator
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
+      appBar: AppBar(
+        title: const Text('Preview Kamera'),
+        backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cameraswitch),
+            onPressed: _switchCamera,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            flex: 4,
+            child: CameraPreview(controller!),
+          ),
+          Expanded(
+            flex: 2,
+            child: Container(
+              color: Colors.grey[200],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (imagePath != null)
+                    Column(
+                      children: [
+                        Image.file(File(imagePath!), height: 120),
+                        const SizedBox(height: 8),
+                        Text(
+                          imagePath!,
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    )
+                  else
+                    const Text('Belum ada foto diambil'),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _takePicture,
+                    icon: const Icon(Icons.camera),
+                    label: const Text('Ambil Gambar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
