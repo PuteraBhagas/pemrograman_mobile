@@ -120,6 +120,52 @@ class _MyAppState extends State<MyApp> {
                   ],
                 ),
               ),
+              SizedBox(height: 10),
+
+              // ukuran font
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: settings.isDarkMode
+                      ? Colors.blueGrey[800]
+                      : Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Ukuran Font : ${settings.fontSize}',
+                      style: TextStyle(color: settings.textColor, fontSize: 16),
+                    ),
+                    SizedBox(height: 10),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: decreaseFont,
+                          icon: Icon(
+                            Icons.remove_circle,
+                            color: settings.textColor,
+                          ),
+                        ),
+
+                        SizedBox(width: 20),
+
+                        IconButton(
+                          onPressed: increaseFont,
+                          icon: Icon(
+                            Icons.add_circle,
+                            color: settings.textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
             ],
           ),
         ),
