@@ -166,8 +166,30 @@ class _MyAppState extends State<MyApp> {
               ),
 
               SizedBox(height: 20),
+
+               Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: settings.textColor.withOpacity(0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Ini adalah preview text dengan ukuran font ${settings.fontSize}',
+                  style: TextStyle(
+                    fontSize: settings.fontSize.toDouble(),
+                    color: settings.textColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           ),
+        ),
+         floatingActionButton: FloatingActionButton(onPressed: toggleTheme,
+        child: Icon(settings.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+        backgroundColor: settings.isDarkMode ? Colors.blueGrey[800] : Colors.blue,
         ),
       ),
     );
