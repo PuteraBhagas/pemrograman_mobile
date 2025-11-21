@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -19,7 +18,7 @@ class WireMockApp extends StatelessWidget {
 }
 
 class ApiConfig {
-  static const String baseUrl = 'https://5l18z.wiremockapi.cloud/';
+  static const String baseUrl = 'https://5l18z.wiremockapi.cloud';
   static const String usersEndpoint = '/users';
 
   static Map<String, String> headers = {
